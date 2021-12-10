@@ -7,7 +7,7 @@ Created on Sun Nov  7 06:37:23 2021
 """
 import numpy as np
 import pyomo.environ as pyo
-from helper_functions import transformation_matrix, vee, hat
+from helper_functions import *
 
 def att_loop_control (quadcopter, ref, xk, F_vec):
     # quadrotor: quad object of type quad_class
@@ -16,18 +16,19 @@ def att_loop_control (quadcopter, ref, xk, F_vec):
     # Fvec: force vector (x,y,z) components from position controller
     
     # Unpack states
-    phi, theta, psi, p, q, r, u, v, w, x, y, z = xk
+    R = np.reshape(xk[0:9],(3,3))
+    omega = xk[9:12]; Om = hat(omega)
+    u, v, w, x, y, z = xk[12:18]
     
     # Compute unit vector in direction of required force
     b3c = F_vec / np.linalg.norm(F_vec)
-    R = transformation_matrix(phi, theta, psi)
     b3 = R[:,2]
     b1d = np.array([1,0,0])
     
-    b1c = -np.cross(b3c,np.cross(b3c,b1d.T))
-    b1c = b1c / np.linalg.norm(np.cross(b3c,b1d.T))
+    b1c = -vec_cross(b3c,vec_cross(b3c,b1d.T))
+    b1c = np.reshape(b1c / np.linalg.norm(vec_cross(b3c,b1d.T)), (3,1))
     
-    Rc = np.array([b1c , np.cross(b3c,b1c) , b3c])
+    Rc = np.hstack(( b1c , np.reshape(vec_cross(b3c,b1c),(3,1)) , np.reshape(b3c,(3,1)) ))
     Rd = Rc
     
     # Import reference angular velocity and acceleration
@@ -36,12 +37,13 @@ def att_loop_control (quadcopter, ref, xk, F_vec):
     
     # Calculate errors in orientation and angular velocity
     err_R = 0.5 * vee((Rd.T)@R - (R.T)@Rd)
-    Omega = np.array([p,q,r]).T
-    err_Om = Omega - (R.T)@Rd@Omegad
+    err_Om = omega - (R.T)@Rd@Omegad
+    
+    print("err_R: ",err_R)
     
     # Compute inputs
     f_T = np.dot(F_vec,b3)
-    n_xyz = - (quadcopter.kR)@err_R - (quadcopter.kOm)@err_Om + np.cross(Omega,(quadcopter.J)@Omega) - (quadcopter.J)@(hat(Omega)@(R.T)@Rd@Omegad - (R.T)@Rd@dOmegad)
+    n_xyz = - (quadcopter.kR)@err_R - (quadcopter.kOm)@err_Om #+ np.cross(Omega,(quadcopter.J)@Omega) - (quadcopter.J)@(hat(Omega)@(R.T)@Rd@Omegad - (R.T)@Rd@dOmegad)
         
     return f_T, n_xyz
 
@@ -54,7 +56,7 @@ def pos_loop_control(quadrotor, ref, N_MPC, k_cur, x0):
     # x0: initial condition of current optimization problem
     
     # Trim x0 to desired states only (u,v,w,x,y,z)
-    x0 = x0[6:12]
+    x0 = x0[12:18]
     
     # Initialize optimization problem
     model = pyo.ConcreteModel()

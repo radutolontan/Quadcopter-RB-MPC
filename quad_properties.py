@@ -9,17 +9,13 @@ import numpy as np
 
 # Create quadrotor class
 class quad_class:
-    def __init__(self, mass, Ixx, Iyy, Izz, xL, xU, uL, uU):
+    def __init__(self, mass, Ixx, Iyy, Izz, J, uL, uU):
         self.mass = mass # Mass (kg)
         self.Ixx = Ixx # mass moment of inertia about x-
         self.Iyy = Iyy # mass moment of inertia about y-
         self.Izz = Izz # mass moment of inertia about z-
-        self.J = np.array([[Ixx, 0, 0],
-                           [0, Iyy, 0],
-                           [0, 0, Izz]])
+        self.J = J # Inertia Matrix
         
-        self.xL = xL # xL < x < xU
-        self.xU = xU
         self.uL = uL # uL < u < uU
         self.uU = uU
         
@@ -63,8 +59,8 @@ class quad_class:
                            [0 , 0 , 0 , 0]])
             # for inputs = f, M1, M2, M3
         self.fMax = 35 # Maximum force quad can develop (N)
-        self.kR = 200 * np.eye(3)
-        self.kOm = 40 * np.eye(3)
+        self.kR = 1 * np.eye(3)
+        self.kOm = 0.1 * np.eye(3)
 
 def quad_MATLAB_sim():
     # Mass properties
@@ -72,11 +68,12 @@ def quad_MATLAB_sim():
     Iyy = Ixx # (kg*m^2)
     Izz = 1.05e-02 # (kg*m^2)
     m = 0.85 # (kg)
-    # State constraints
-    xL = np.array([-0.5236, -0.5236, -9e09, -9e09, -9e09, -9e09, -9e09, -9e09, -9e09, -9e09, -9e09, -9e09])
-    xU = np.array([0.5236 ,  0.5236,  9e09,  9e09,  9e09,  9e09,  9e09,  9e09,  9e09,  9e09,  9e09,  9e09])
+    J = np.array([[Ixx, 0, 0],
+                  [0, Iyy, 0],
+                  [0, 0, Izz]])
+   
     # Input constraints
     uU = np.array([4, 4, 4])*0.25
     uL = np.array([-4, -4, -4])*0.25
     
-    return m, Ixx, Iyy, Izz, xL, xU, uL, uU
+    return m, Ixx, Iyy, Izz, J, uL, uU

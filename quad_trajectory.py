@@ -7,20 +7,21 @@ Created on Tue Nov  9 19:51:06 2021
 """
 
 import numpy as np
+from helper_functions import EUL2ROT_MAT
 
 
 class trajectory:
     def __init__(self, freq):
         self.freq = freq
-        self.lin_velocity = 1.2
+        self.lin_velocity = 0.2
         self.TS = 1/freq
-        self.R = np.eye(3)
+        self.R = EUL2ROT_MAT(0,np.pi/6,0)
         self.Omega = np.zeros(3)
         self.dOmega = np.zeros(3)
     # For a given array of time steps, return the trajectory preview
     def x(self, k):
         x = np.zeros((3,int(np.size(k)))) 
-        x[0,:] = np.array(k) * self.lin_velocity / self.freq
+        x[0,:] = 0 * np.array(k) * self.lin_velocity / self.freq
         return x
     
     
